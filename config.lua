@@ -43,9 +43,26 @@ lvim.keys.normal_mode["<leader>gg"] = "<cmd>LazyGit<CR>"
 lvim.keys.normal_mode["<leader>gm"] = function()
   require("telescope.builtin").git_status()
 end
+
+-- local cwd = vim.lsp.get_active_clients()[1].config.root_dir
+local cwd = vim.fn.systemlist("git rev-parse --show-toplevel")[1];
+lvim.keys.normal_mode["<leader>aa"] = function() print(cwd) end
+
 lvim.keys.normal_mode["<leader>bf"] = function() require("telescope.builtin").current_buffer_fuzzy_find() end
-lvim.keys.normal_mode["<leader>ss"] = function() require("telescope.builtin").grep_string() end
-lvim.keys.normal_mode["<leader>se"] = function() require("telescope.builtin").grep_string({ word_match = "-w" }) end
+lvim.keys.normal_mode["<leader>ss"] = function()
+  require("telescope.builtin").grep_string({
+    cwd = cwd })
+end
+lvim.keys.normal_mode["<leader>se"] = function()
+  require("telescope.builtin").grep_string({
+    cwd = cwd,
+    word_match = "-w"
+  })
+end
+lvim.keys.normal_mode["<leader>fw"] = function()
+  require("telescope.builtin").live_grep({
+    cwd = cwd })
+end
 -- lvim.keys.normal_mode["<leader>st"] = function() require("telescope.builtin").colorscheme({ enable_preview = true }) end
 lvim.keys.normal_mode["<leader>st"] = function() require("telescope.builtin").builtin() end
 lvim.keys.normal_mode["<leader>sc"] = function() require("telescope.builtin").git_commits() end
@@ -226,6 +243,7 @@ lvim.plugins = {
   --   cmd = "TroubleToggle",
   -- },
   { "catppuccin/nvim" },
+  { "github/copilot.vim" },
   {
     "olimorris/persisted.nvim",
     config = function()
