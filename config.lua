@@ -256,6 +256,13 @@ lvim.plugins = {
   },
   { "kdheepak/lazygit.nvim" },
   { "sindrets/diffview.nvim" },
+  {
+    "pmizio/typescript-tools.nvim",
+    dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
+    config = function()
+      require("typescript-tools").setup {}
+    end,
+  }
 }
 
 -- -- Autocommands (`:help autocmd`) <https://neovim.io/doc/user/autocmd.html>
