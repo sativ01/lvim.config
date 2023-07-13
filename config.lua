@@ -236,6 +236,41 @@ linters.setup {
   -- },
 }
 
+-- filter out D.TS files from search
+local function filter(arr, fn)
+  if type(arr) ~= "table" then
+    return arr
+  end
+
+  local filtered = {}
+  for k, v in pairs(arr) do
+    if fn(v, k, arr) then
+      table.insert(filtered, v)
+    end
+  end
+
+  return filtered
+end
+
+local function filterReactDTS(value)
+  -- Depending on typescript version either uri or targetUri is returned
+  if value.uri then
+    return string.match(value.uri, "%.d.ts") == nil
+  elseif value.targetUri then
+    return string.match(value.targetUri, "%.d.ts") == nil
+  end
+end
+local handlers = {
+  ["textDocument/definition"] = function(err, result, method, ...)
+    if vim.tbl_islist(result) and #result > 1 then
+      local filtered_result = filter(result, filterReactDTS)
+      return vim.lsp.handlers["textDocument/definition"](err, filtered_result, method, ...)
+    end
+
+    vim.lsp.handlers["textDocument/definition"](err, result, method, ...)
+  end,
+}
+
 -- -- Additional Plugins <https://www.lunarvim.org/docs/plugins#user-plugins>
 lvim.plugins = {
   -- {
@@ -256,7 +291,24 @@ lvim.plugins = {
   },
   { "kdheepak/lazygit.nvim" },
   { "sindrets/diffview.nvim" },
+  {
+    "pmizio/typescript-tools.nvim",
+    dependency = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
+    config = function()
+      require("typescript-tools").setup {
+        handlers = handlers
+      }
+    end,
+  }
 }
+
+-- Disable default typescript server to enable typescript-tools to handle it
+vim.list_extend(lvim.lsp.automatic_configuration.skipped_servers, { "tsserver" })
+-- TS tools key maps
+lvim.keys.normal_mode["<leader>io"] = "<cmd>TSToolsOrganizeImports<cr>"
+lvim.keys.normal_mode["<leader>ia"] = "<cmd>TSToolsAddMissingImports<cr>"
+lvim.keys.normal_mode["<leader>if"] = "<cmd>TSToolsFixAll<cr>"
+
 
 -- -- Autocommands (`:help autocmd`) <https://neovim.io/doc/user/autocmd.html>
 -- vim.api.nvim_create_autocmd("FileType", {
@@ -266,3 +318,9 @@ lvim.plugins = {
 --     require("nvim-treesitter.highlight").attach(0, "bash")
 --   end,
 -- })
+-- // Autocommand to close quick list after the selection
+vim.api.nvim_create_autocmd(
+  "FileType", {
+    pattern = "qf",
+    command = [[nnoremap <buffer> <CR> <CR>:cclose<CR>]]
+  })
