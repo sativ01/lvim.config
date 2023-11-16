@@ -44,6 +44,10 @@ lvim.keys.normal_mode["<leader>gm"] = function()
   require("telescope.builtin").git_status()
 end
 
+-- unmap lunarvim keys
+lvim.keys.normal_mode["<leader>h"] = false
+lvim.builtin.which_key.mappings['<leader>h'] = {}
+
 -- local cwd = vim.lsp.get_active_clients()[1].config.root_dir
 local cwd = vim.fn.systemlist("git rev-parse --show-toplevel")[1];
 lvim.keys.normal_mode["<leader>aa"] = function() print(cwd) end
@@ -59,12 +63,12 @@ lvim.keys.normal_mode["<leader>se"] = function()
     word_match = "-w"
   })
 end
-lvim.keys.normal_mode["<leader>fw"] = function()
+lvim.keys.normal_mode["<leader>st"] = function()
   require("telescope.builtin").live_grep({
     cwd = cwd })
 end
 -- lvim.keys.normal_mode["<leader>st"] = function() require("telescope.builtin").colorscheme({ enable_preview = true }) end
-lvim.keys.normal_mode["<leader>st"] = function() require("telescope.builtin").builtin() end
+-- lvim.keys.normal_mode["<leader>st"] = function() require("telescope.builtin").builtin() end
 lvim.keys.normal_mode["<leader>sc"] = function() require("telescope.builtin").git_commits() end
 -- copy/change/delete word
 lvim.keys.normal_mode["cw"] = "ciw"
@@ -169,6 +173,10 @@ lvim.builtin.telescope.defaults = {
     }
   },
 }
+-- Telescope extensions
+lvim.builtin.telescope.on_config_done = function(telescope)
+  pcall(telescope.load_extension, "harpoon")
+end
 
 -- -- Use which-key to add extra bindings with the leader-key prefix
 lvim.builtin.which_key.mappings["W"] = { "<cmd>noautocmd w<cr>", "Save without formatting" }
@@ -176,8 +184,8 @@ lvim.builtin.which_key.mappings["<leader>W"] = { "<cmd>wa<cr>", "Save all files"
 -- lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
 
 -- -- Change theme settings
--- lvim.colorscheme = "lunar"
-lvim.colorscheme = "catppuccin-macchiato"
+lvim.colorscheme = "lunar"
+-- lvim.colorscheme = "catppuccin-macchiato"
 
 lvim.builtin.alpha.active = true
 lvim.builtin.alpha.mode = "dashboard"
@@ -225,11 +233,19 @@ lvim.builtin.treesitter.auto_install = true
 -- -- linters and formatters <https://www.lunarvim.org/docs/languages#lintingformatting>
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
-  { command = "prettierd", filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" } }
+  {
+    command = "prettierd",
+    args = { "--print-width", "80" },
+    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
+  }
 }
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  { command = "eslint_d", filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" } },
+  {
+    command = "eslint_d",
+    args = { "--print-width" },
+    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
+  },
   -- {
   --   command = "shellcheck",
   --   args = { "--severity", "warning" },
@@ -277,8 +293,22 @@ lvim.plugins = {
   --   "folke/trouble.nvim",
   --   cmd = "TroubleToggle",
   -- },
-  { "catppuccin/nvim" },
-  { "github/copilot.vim" },
+  {
+    "catppuccin/nvim",
+    config = function()
+      require("catppuccin").setup {
+        flavour = "latte",
+        transparent_background = true,
+      }
+    end,
+  },
+  {
+    -- "github/copilot.vim",
+    -- config = function()
+    --   vim.cmd [[imap <silent><script><expr> <C-j> copilot#Accept("\<CR>")]]
+    --   vim.g.copilot_no_tab_map = true
+    -- end
+  },
   {
     "olimorris/persisted.nvim",
     config = function()
@@ -296,10 +326,65 @@ lvim.plugins = {
     dependency = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
     config = function()
       require("typescript-tools").setup {
-        handlers = handlers
+        handlers = handlers,
+        settings = {
+          -- spawn additional tsserver instance to calculate diagnostics on it
+          separate_diagnostic_server = false,
+          -- "change"|"insert_leave" determine when the client asks the server about diagnostic
+          publish_diagnostic_on = "insert_leave",
+          -- array of strings("fix_all"|"add_missing_imports"|"remove_unused")
+          -- specify commands exposed as code_actions
+          -- expose_as_code_action = {},
+          -- string|nil - specify a custom path to `tsserver.js` file, if this is nil or file under path
+          -- not exists then standard path resolution strategy is applied
+          -- tsserver_path = nil,
+          -- specify a list of plugins to load by tsserver, e.g., for support `styled-components`
+          -- (see 💅 `styled-components` support section)
+          -- tsserver_plugins = {},
+          -- this value is passed to: https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
+          -- memory limit in megabytes or "auto"(basically no limit)
+          tsserver_max_memory = 8096,
+          -- described below
+          -- tsserver_format_options = {},
+          -- tsserver_file_preferences = {},
+          -- mirror of VSCode's `typescript.suggest.completeFunctionCalls`
+          complete_function_calls = false,
+        },
+      }
+    end,
+  },
+  {
+    "ThePrimeagen/harpoon",
+    config = function()
+      require("harpoon").setup {
+        -- sets the marks upon calling `toggle` on the ui, instead of require `:w`.
+        save_on_toggle = false,
+        -- saves the harpoon file upon every change. disabling is unrecommended.
+        save_on_change = true,
+        -- sets harpoon to run the command immediately as it's passed to the terminal when calling `sendCommand`.
+        enter_on_sendcmd = false,
+        -- closes any tmux windows harpoon that harpoon creates when you close Neovim.
+        tmux_autoclose_windows = false,
+        -- filetypes that you want to prevent from adding to the harpoon list menu.
+        excluded_filetypes = { "harpoon" },
+        -- set marks specific to each git branch inside git repository
+        mark_branch = true,
+        -- enable tabline with harpoon marks
+        tabline = false,
+        tabline_prefix = "   ",
+        tabline_suffix = "   ",
       }
     end,
   }
+}
+
+-- Harpoon keymaps
+lvim.builtin.which_key.mappings["h"] = {
+  name = "Harpoon",
+  m = { function() require("harpoon.mark").toggle_file() end, "Mark Toggle" },
+  l = { function() require("harpoon.ui").nav_next() end, "Next Mark" },
+  h = { function() require("harpoon.ui").nav_prev() end, "Prev Mark" },
+  a = { "<cmd>Telescope harpoon marks<CR>", "All marks display" },
 }
 
 -- Disable default typescript server to enable typescript-tools to handle it
@@ -324,3 +409,4 @@ vim.api.nvim_create_autocmd(
     pattern = "qf",
     command = [[nnoremap <buffer> <CR> <CR>:cclose<CR>]]
   })
+-- reload "user.copilot"
