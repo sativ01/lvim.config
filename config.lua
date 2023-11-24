@@ -8,11 +8,12 @@ vim.opt.signcolumn = "auto"
 vim.opt.wrap = false
 
 -- general
-lvim.log.level = "warning"
 lvim.format_on_save = {
   enabled = true,
   timeout = 10000,
 }
+
+lvim.log.level = "warning"
 -- to disable icons and use a minimalist setup, uncomment the following
 -- lvim.use_icons = false
 
@@ -84,6 +85,7 @@ lvim.keys.normal_mode["<leader>cl"] = "<cmd>BufferLineCloseRight<cr>"
 -- select all
 lvim.keys.normal_mode["<leader>a"] = "<esc>ggVG"
 lvim.keys.normal_mode["gd"] = function() require("telescope.builtin").lsp_definitions() end
+lvim.keys.normal_mode["gv"] = function() require("telescope.builtin").lsp_definitions({ jump_type = "vsplit" }) end
 lvim.keys.normal_mode["<leader>lR"] = function()
   require("telescope.builtin").lsp_references({ show_line = false })
 end
@@ -235,7 +237,6 @@ local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
   {
     command = "prettierd",
-    args = { "--print-width", "80" },
     filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
   }
 }
@@ -243,7 +244,7 @@ local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
   {
     command = "eslint_d",
-    args = { "--print-width" },
+    args = { "--print-width", "80" },
     filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
   },
   -- {
@@ -303,13 +304,6 @@ lvim.plugins = {
     end,
   },
   {
-    -- "github/copilot.vim",
-    -- config = function()
-    --   vim.cmd [[imap <silent><script><expr> <C-j> copilot#Accept("\<CR>")]]
-    --   vim.g.copilot_no_tab_map = true
-    -- end
-  },
-  {
     "olimorris/persisted.nvim",
     config = function()
       require("persisted").setup {
@@ -328,26 +322,10 @@ lvim.plugins = {
       require("typescript-tools").setup {
         handlers = handlers,
         settings = {
-          -- spawn additional tsserver instance to calculate diagnostics on it
+          -- expose_as_code_action = { "all" },
           separate_diagnostic_server = false,
-          -- "change"|"insert_leave" determine when the client asks the server about diagnostic
           publish_diagnostic_on = "insert_leave",
-          -- array of strings("fix_all"|"add_missing_imports"|"remove_unused")
-          -- specify commands exposed as code_actions
-          -- expose_as_code_action = {},
-          -- string|nil - specify a custom path to `tsserver.js` file, if this is nil or file under path
-          -- not exists then standard path resolution strategy is applied
-          -- tsserver_path = nil,
-          -- specify a list of plugins to load by tsserver, e.g., for support `styled-components`
-          -- (see 💅 `styled-components` support section)
-          -- tsserver_plugins = {},
-          -- this value is passed to: https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
-          -- memory limit in megabytes or "auto"(basically no limit)
           tsserver_max_memory = 8096,
-          -- described below
-          -- tsserver_format_options = {},
-          -- tsserver_file_preferences = {},
-          -- mirror of VSCode's `typescript.suggest.completeFunctionCalls`
           complete_function_calls = false,
         },
       }
@@ -375,9 +353,30 @@ lvim.plugins = {
         tabline_suffix = "   ",
       }
     end,
-  }
+  },
+  {
+    "zbirenbaum/copilot-cmp",
+    event = "InsertEnter",
+    dependencies = { "zbirenbaum/copilot.lua" },
+    config = function()
+      vim.defer_fn(function()
+        require("copilot").setup({
+          copilot_node_command = vim.fn.expand("$HOME") .. "/.nvm/versions/node/v18.18.2/bin/node", -- Node.js version must be > 18.x
+        })     -- https://github.com/zbirenbaum/copilot.lua/blob/master/README.md#setup-and-configuration
+        require("copilot_cmp").setup() -- https://github.com/zbirenbaum/copilot-cmp/blob/master/README.md#configuration
+      end, 100)
+    end,
+  },
 }
-
+-- Spotify keymaps
+lvim.builtin.which_key.mappings["m"] = {
+  name = "Music",
+  p = { function() require("nvim-spotify").SpotifyPause() end, "Play/Pause" },
+  l = { function() require("nvim-spotify").SpotifySkip() end, "Next Song" },
+  h = { function() require("nvim-spotify").SpotifyPrev() end, "Prev Song" },
+  a = { function() require("nvim-spotify").SpotifySave() end, "Save Song" },
+  f = { ":Spotify<CR>", "Find Song" },
+}
 -- Harpoon keymaps
 lvim.builtin.which_key.mappings["h"] = {
   name = "Harpoon",
@@ -409,4 +408,3 @@ vim.api.nvim_create_autocmd(
     pattern = "qf",
     command = [[nnoremap <buffer> <CR> <CR>:cclose<CR>]]
   })
--- reload "user.copilot"
