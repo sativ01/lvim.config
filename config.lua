@@ -6,6 +6,7 @@ vim.opt.number = true
 vim.opt.spell = false
 vim.opt.signcolumn = "auto"
 vim.opt.wrap = false
+vim.opt.autochdir = false
 
 -- general
 lvim.format_on_save = {
@@ -47,11 +48,33 @@ end
 
 -- unmap lunarvim keys
 lvim.keys.normal_mode["<leader>h"] = false
+lvim.keys.normal_mode["<leader>f"] = false
 lvim.builtin.which_key.mappings['<leader>h'] = {}
 
 -- local cwd = vim.lsp.get_active_clients()[1].config.root_dir
-local cwd = vim.fn.systemlist("git rev-parse --show-toplevel")[1];
+-- local cwd = vim.fn.systemlist("git rev-parse --show-toplevel")[1];
+local cwd = vim.fn.getcwd();
 lvim.keys.normal_mode["<leader>aa"] = function() print(cwd) end
+
+-- search global cwd
+lvim.keys.normal_mode["<leader>fg"] = function()
+  require("telescope.builtin").find_files({
+    preview = {
+      treesitter = false
+    },
+    cwd = cwd,
+  })
+end
+
+-- search global cwd
+lvim.keys.normal_mode["<leader>fl"] = function()
+  require("telescope.builtin").find_files({
+    preview = {
+      treesitter = false
+    },
+  })
+end
+
 
 lvim.keys.normal_mode["<leader>bf"] = function() require("telescope.builtin").current_buffer_fuzzy_find() end
 lvim.keys.normal_mode["<leader>ss"] = function()
@@ -119,18 +142,23 @@ lvim.builtin.telescope.extensions = {
     case_mode = "respect_case",     -- or "ignore_case" or "respect_case"
     -- the default case_mode is "smart_case"
   },
+  ["ui-select"] = {
+    require("telescope.themes").get_dropdown {
+      -- even more opts
+    }
+  }
 }
 lvim.builtin.telescope.defaults = {
-  vimgrep_arguments = {
-    "rg",
-    "-L",
-    "--color=never",
-    "--no-heading",
-    "--with-filename",
-    "--line-number",
-    "--column",
-    "--smart-case",
-  },
+  -- vimgrep_arguments = {
+  --   "rg",
+  --   "-L",
+  --   "--color=never",
+  --   "--no-heading",
+  --   "--with-filename",
+  --   "--line-number",
+  --   "--column",
+  --   "--smart-case",
+  -- },
   prompt_prefix = "   ",
   selection_caret = "  ",
   entry_prefix = "  ",
@@ -155,6 +183,9 @@ lvim.builtin.telescope.defaults = {
   file_ignore_patterns = { "node_modules" },
   -- generic_sorter = require("telescope.sorters").get_generic_fuzzy_sorter,
   path_display = { "truncate" },
+  -- preview = {
+  --   treesitter = false
+  -- },
   winblend = 0,
   border = {},
   borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
@@ -178,6 +209,7 @@ lvim.builtin.telescope.defaults = {
 -- Telescope extensions
 lvim.builtin.telescope.on_config_done = function(telescope)
   pcall(telescope.load_extension, "harpoon")
+  -- pcall(telescope.load_extension, "ui-select")
 end
 
 -- -- Use which-key to add extra bindings with the leader-key prefix
@@ -244,7 +276,7 @@ local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
   {
     command = "eslint_d",
-    args = { "--print-width", "80" },
+    -- args = { "--print-width", "80" },
     filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
   },
   -- {
@@ -315,6 +347,7 @@ lvim.plugins = {
   },
   { "kdheepak/lazygit.nvim" },
   { "sindrets/diffview.nvim" },
+  { "nvim-telescope/telescope-ui-select.nvim" },
   {
     "pmizio/typescript-tools.nvim",
     dependency = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
@@ -323,7 +356,7 @@ lvim.plugins = {
         handlers = handlers,
         settings = {
           -- expose_as_code_action = { "all" },
-          separate_diagnostic_server = false,
+          separate_diagnostic_server = true,
           publish_diagnostic_on = "insert_leave",
           tsserver_max_memory = 8096,
           complete_function_calls = false,
@@ -362,11 +395,15 @@ lvim.plugins = {
       vim.defer_fn(function()
         require("copilot").setup({
           copilot_node_command = vim.fn.expand("$HOME") .. "/.nvm/versions/node/v18.18.2/bin/node", -- Node.js version must be > 18.x
-        })     -- https://github.com/zbirenbaum/copilot.lua/blob/master/README.md#setup-and-configuration
-        require("copilot_cmp").setup() -- https://github.com/zbirenbaum/copilot-cmp/blob/master/README.md#configuration
+        })                                                                                          -- https://github.com/zbirenbaum/copilot.lua/blob/master/README.md#setup-and-configuration
+        require("copilot_cmp").setup()                                                              -- https://github.com/zbirenbaum/copilot-cmp/blob/master/README.md#configuration
       end, 100)
     end,
   },
+  {
+    "KadoBOT/nvim-spotify",
+    dependencies = { "nvim-telescope/telescope.nvim" },
+  }
 }
 -- Spotify keymaps
 lvim.builtin.which_key.mappings["m"] = {
