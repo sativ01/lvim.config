@@ -394,7 +394,7 @@ lvim.plugins = {
     config = function()
       vim.defer_fn(function()
         require("copilot").setup({
-          copilot_node_command = vim.fn.expand("$HOME") .. "/.nvm/versions/node/v18.18.2/bin/node", -- Node.js version must be > 18.x
+          copilot_node_command = vim.fn.expand("$HOME") .. "/.nvm/versions/node/v18.19.0/bin/node", -- Node.js version must be > 18.x
         })                                                                                          -- https://github.com/zbirenbaum/copilot.lua/blob/master/README.md#setup-and-configuration
         require("copilot_cmp").setup()                                                              -- https://github.com/zbirenbaum/copilot-cmp/blob/master/README.md#configuration
       end, 100)
@@ -403,6 +403,31 @@ lvim.plugins = {
   {
     "KadoBOT/nvim-spotify",
     dependencies = { "nvim-telescope/telescope.nvim" },
+  },
+  {
+    "folke/noice.nvim",
+    dependencies = { "MunifTanjim/nui.nvim", "rcarriga/nvim-notify" },
+
+    config = function()
+      require("noice").setup({
+        lsp = {
+          -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+          override = {
+            ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
+            ["vim.lsp.util.stylize_markdown"] = true,
+            ["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
+          },
+        },
+        -- you can enable a preset for easier configuration
+        presets = {
+          bottom_search = true,   -- use a classic bottom cmdline for search
+          command_palette = true, -- position the cmdline and popupmenu together
+          long_message_to_split = true, -- long messages will be sent to a split
+          inc_rename = false,     -- enables an input dialog for inc-rename.nvim
+          lsp_doc_border = false, -- add a border to hover docs and signature help
+        },
+      })
+    end
   }
 }
 -- Spotify keymaps
